@@ -4,7 +4,9 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Gift } from '@/types/gift'
-import { suggestGifts, getImageUrl } from '@/lib/api'
+import { suggestGifts } from '@/lib/api'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import GiftCard from '@/components/GiftCard'
 
 function ResultsContent() {
   const searchParams = useSearchParams()
@@ -39,14 +41,7 @@ function ResultsContent() {
   }, [searchParams])
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-valentine-light via-pink-50 to-red-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-valentine-pink mx-auto mb-4"></div>
-          <p className="text-xl text-gray-700">Finding perfect gifts...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner message="Finding perfect gifts..." />
   }
 
   return (
@@ -87,40 +82,7 @@ function ResultsContent() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {gifts.map((gift) => (
-                <div
-                  key={gift.id}
-                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-                >
-                  {gift.image ? (
-                    <div className="h-48 relative bg-gray-200 overflow-hidden">
-                      <img
-                        src={getImageUrl(gift.image)}
-                        alt={gift.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-48 bg-gradient-to-br from-valentine-pink to-valentine-red flex items-center justify-center">
-                      <span className="text-6xl">🎁</span>
-                    </div>
-                  )}
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">
-                      {gift.name}
-                    </h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">
-                      {gift.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl font-bold text-valentine-red">
-                        ${gift.price.toFixed(2)}
-                      </span>
-                      <button className="bg-valentine-pink text-white px-4 py-2 rounded-lg font-semibold hover:bg-valentine-red transition-colors">
-                        Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <GiftCard key={gift.id} gift={gift} />
               ))}
             </div>
           )}
@@ -132,14 +94,7 @@ function ResultsContent() {
 
 export default function ResultsPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-valentine-light via-pink-50 to-red-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-valentine-pink mx-auto mb-4"></div>
-          <p className="text-xl text-gray-700">Loading...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingSpinner message="Loading..." />}>
       <ResultsContent />
     </Suspense>
   )

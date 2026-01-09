@@ -33,7 +33,7 @@ export async function addGift(giftData: FormData) {
   return response.json()
 }
 
-export async function deleteGift(id: string) {
+export async function deleteGift(id: number) {
   const response = await fetch(`${API_BASE_URL}/api/gifts/${id}`, {
     method: 'DELETE',
   })

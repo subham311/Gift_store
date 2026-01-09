@@ -1,27 +1,17 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Gift } from '@/types/gift'
 import Link from 'next/link'
-import { fetchGifts, addGift, deleteGift, getImageUrl } from '@/lib/api'
+import { fetchGifts, addGift, deleteGift } from '@/lib/api'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import GiftCard from '@/components/GiftCard'
+import GiftForm from '@/components/GiftForm'
 
 export default function AdminPage() {
   const [gifts, setGifts] = useState<Gift[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    image: '',
-    gender: '',
-    ageMin: '',
-    ageMax: '',
-    nationalities: '',
-    jobs: '',
-  })
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadGifts()
@@ -38,55 +28,9 @@ export default function AdminPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const handleAddGift = async (formData: FormData) => {
     try {
-      const formDataToSend = new FormData()
-      formDataToSend.append('name', formData.name)
-      formDataToSend.append('description', formData.description)
-      formDataToSend.append('price', formData.price)
-      
-      if (imageFile) {
-        formDataToSend.append('image', imageFile)
-      } else if (formData.image) {
-        formDataToSend.append('imageUrl', formData.image)
-      }
-      
-      if (formData.gender) {
-        formDataToSend.append('gender', formData.gender)
-      }
-      if (formData.ageMin) {
-        formDataToSend.append('ageMin', formData.ageMin)
-      }
-      if (formData.ageMax) {
-        formDataToSend.append('ageMax', formData.ageMax)
-      }
-      if (formData.nationalities) {
-        formDataToSend.append('nationalities', formData.nationalities)
-      }
-      if (formData.jobs) {
-        formDataToSend.append('jobs', formData.jobs)
-      }
-
-      await addGift(formDataToSend)
-      
-      setFormData({
-        name: '',
-        description: '',
-        price: '',
-        image: '',
-        gender: '',
-        ageMin: '',
-        ageMax: '',
-        nationalities: '',
-        jobs: '',
-      })
-      setImageFile(null)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-      setShowForm(false)
+      await addGift(formData)
       loadGifts()
     } catch (error) {
       console.error('Error adding gift:', error)
@@ -107,14 +51,7 @@ export default function AdminPage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-valentine-light via-pink-50 to-red-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-valentine-pink mx-auto mb-4"></div>
-          <p className="text-xl text-gray-700">Loading...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner message="Loading..." />
   }
 
   return (
@@ -145,159 +82,7 @@ export default function AdminPage() {
           </div>
 
           {showForm && (
-            <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Add New Gift</h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Gift Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-valentine-pink"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price * ($)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-valentine-pink"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description *
-                  </label>
-                  <textarea
-                    required
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-valentine-pink"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload Image (optional)
-                  </label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) {
-                        setImageFile(file)
-                        setFormData({ ...formData, image: '' })
-                      }
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-valentine-pink"
-                  />
-                  {imageFile && (
-                    <p className="text-sm text-gray-600">Selected: {imageFile.name}</p>
-                  )}
-                  <div className="text-sm text-gray-500">OR</div>
-                  <input
-                    type="url"
-                    value={formData.image}
-                    onChange={(e) => {
-                      setFormData({ ...formData, image: e.target.value })
-                      setImageFile(null)
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = ''
-                      }
-                    }}
-                    placeholder="Enter image URL"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-valentine-pink"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Gender (comma-separated, optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.gender}
-                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                      placeholder="e.g., male, female"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-valentine-pink"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Age Min
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.ageMin}
-                        onChange={(e) => setFormData({ ...formData, ageMin: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-valentine-pink"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Age Max
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.ageMax}
-                        onChange={(e) => setFormData({ ...formData, ageMax: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-valentine-pink"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nationalities (comma-separated, optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nationalities}
-                    onChange={(e) => setFormData({ ...formData, nationalities: e.target.value })}
-                    placeholder="e.g., American, Japanese"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-valentine-pink"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Jobs (comma-separated, optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.jobs}
-                    onChange={(e) => setFormData({ ...formData, jobs: e.target.value })}
-                    placeholder="e.g., Engineer, Teacher, Student"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-valentine-pink"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-valentine-pink to-valentine-red text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all"
-                >
-                  Add Gift
-                </button>
-              </form>
-            </div>
+            <GiftForm onSubmit={handleAddGift} onCancel={() => setShowForm(false)} />
           )}
 
           {gifts.length === 0 ? (
@@ -319,43 +104,12 @@ export default function AdminPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {gifts.map((gift) => (
-                <div
+                <GiftCard
                   key={gift.id}
-                  className="bg-white rounded-xl shadow-lg overflow-hidden"
-                >
-                  {gift.image ? (
-                    <div className="h-48 relative bg-gray-200 overflow-hidden">
-                      <img
-                        src={getImageUrl(gift.image)}
-                        alt={gift.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-48 bg-gradient-to-br from-valentine-pink to-valentine-red flex items-center justify-center">
-                      <span className="text-6xl">🎁</span>
-                    </div>
-                  )}
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">
-                      {gift.name}
-                    </h3>
-                    <p className="text-gray-600 mb-4 text-sm line-clamp-2">
-                      {gift.description}
-                    </p>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-2xl font-bold text-valentine-red">
-                        ${gift.price.toFixed(2)}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleDelete(gift.id)}
-                      className="w-full bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
+                  gift={gift}
+                  onDelete={handleDelete}
+                  showDelete={true}
+                />
               ))}
             </div>
           )}
